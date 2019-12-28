@@ -126,11 +126,13 @@ class MYSMB(smb.SMB):
 		try:
 			with open(pipes_file) as f:
 				pipes = [ x.strip() for x in f.readlines()]
+			print("[i] Got a list of named pipes from \"{}\"".format(pipes_file))
 		except IOError as e:
-			print("[-] Could not open {}, trying hardcoded values".format(pipes_file))
+			print("[-] Could not open \"{}\", trying hardcoded values".format(pipes_file))
 			pipes = [ 'netlogon', 'lsarpc', 'samr', 'browser', 'spoolss', 'atsvc', 'DAV RPC SERVICE', 'epmapper', 'eventlog', 'InitShutdown', 'keysvc', 'lsass', 'LSM_API_service', 'ntsvcs', 'plugplay', 'protected_storage', 'router', 'SapiServerPipeS-1-5-5-0-70123', 'scerpc', 'srvsvc', 'tapsrv', 'trkwks', 'W32TIME_ALT', 'wkssvc','PIPE_EVENTROOT\CIMV2SCM EVENT PROVIDER', 'db2remotecmd' ]
 		tid = self.tree_connect_andx('\\\\'+self.get_remote_host()+'\\'+'IPC$')
 		found_pipes = []
+		print("[i] Testing "+ str(len(pipes)) + " well-known named pipes")
 		for pipe in pipes:
 			try:
 				fid = self.nt_create_andx(tid, pipe)
@@ -145,6 +147,7 @@ class MYSMB(smb.SMB):
 		if len(found_pipes) > 0:
 			return found_pipes[0]
 		else:
+			print("[-] No named-pipe has been found.")
 			return None
 
 

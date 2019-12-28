@@ -19,9 +19,9 @@ def check_ms17_010(conn):
     recvPkt = conn.send_trans(pack('<H', TRANS_PEEK_NMPIPE), maxParameterCount=0xffff, maxDataCount=0x800)
     status = recvPkt.getNTStatus()
     if status == 0xC0000205:  # STATUS_INSUFF_SERVER_RESOURCES
-        print('[!] The target is not patched')
+        print('[!] The target is not patched and most likely vulnerable.')
     else:
-        print('[-] The target is patched')
+        print('[-] The target is patched.')
         sys.exit()
 
 def check_accessible_pipes(conn):
@@ -82,7 +82,7 @@ def main():
     conn.logoff()
     conn.get_socket().close()
 
-    print('[*] Done')
+    print('[*] Finished')
 
 
 
