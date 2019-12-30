@@ -1,8 +1,22 @@
 # MS17-010 Exploit Code
 
-This is some no-bs public exploit code that generates valid shellcode for the eternal blue exploit and scripts out the event listener with the metasploit multi-handler.
+This is public exploit code can be used to test if your windows-machines are vulnerable.
+If they are, you should patch them immediateley, as malware out there is active exploiting this vulnerability
 
-This version of the exploit is prepared in a way where you can exploit eternal blue WITHOUT metasploit. Your options for auto shell generation are to generate shellcode with msfvenom that has meterpreter (i.e. with metasploit) or to generate a normal windows cmd shell (i.e. without metasploit). You may also select between staged and stageless payloads if you wish to avoid utilizing the msfconsole entirely and use netcat/your own shell handler. Alternatively you can elect to brew in your own shellcode.
+## Dislcaimer:
+Test only systems you own or/and have explicit permission to (like in pentests or IT-security-lab-environment).
+If you use this, you are fully rensponsible for everything that results.
+Including but not limited to:
+- malfunctioning services
+- financial damages
+- getting fired
+...
+
+## About:
+This generates valid shellcode for the eternal blue exploit and scripts out the event listener with the metasploit multi-handler or netcat as listener.
+
+This version of the exploit is prepared in a way where you can exploit eternal blue WITHOUT metasploit (which could be needed in any situation you don't have access to metasploit or its use is restricted).
+Your options for auto shell generation are to generate shellcode with msfvenom that has meterpreter (i.e. with metasploit) or to generate a normal windows cmd shell (i.e. without metasploit). You may also select between staged and stageless payloads if you wish to avoid utilizing the msfconsole entirely and use netcat/your own shell handler. Alternatively you can elect to brew in your own shellcode.
 
 This allows for this version of the MS17-010 exploit to be a bit more flexible, and also fully functional, as many exploits leave out the steps to compile the kernel shellcode that usually comes with it.
 
@@ -10,30 +24,12 @@ Included is also an enternal blue checker script that allows you to test if your
 
 run `python eternalblue_checker.py <TARGET-IP>`
 
-
-## TODO:
-1. Testing with non-msfvenom shellcode
-
-## VIDEO TUTORIALS:
-- https://www.youtube.com/watch?v=p9OnxS1oDc0
-- https://youtu.be/2FwqryKUoX8
-
-
 ## USAGE:
 Navigate to the `shellcode` directory in the repo:
 
 run `./shell_prep.sh`
 
 Follow the prompts, for example:
-```
-                 _.-;;-._
-          '-..-'|   ||   |
-          '-..-'|_.-;;-._|
-          '-..-'|   ||   |
-          '-..-'|_.-''-._|   
-Eternal Blue Windows Shellcode Compiler
-
-Let's compile them windoos shellcodezzz
 
 Compiling x64 kernel shellcode
 Compiling x86 kernel shellcode
@@ -75,8 +71,8 @@ Enter 0 for meterpreter shell or 1 for regular cmd shell:
 Starting listener...
 ```
 
-## PWN:
-If you have completed the USAGE steps, now you're ready to PWN the target.
+## Test:
+If you have completed the USAGE steps, now you're ready to Test the target.
 
 run:
 
